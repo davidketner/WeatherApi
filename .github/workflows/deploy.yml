@@ -20,7 +20,7 @@ jobs:
           run_id=$(gh run list --workflow ".NET" --branch master --status success --limit 1 --json databaseId --jq ".[0].databaseId")
         else
           echo "Používám ručně zadaný run ID: ${{ github.event.inputs.build_run_id }}"
-          run_id=${{ github.event.inputs.build_run_id }}
+          run_id="${{ github.event.inputs.build_run_id }}"
         fi
         echo "RUN_ID=$run_id" >> $GITHUB_ENV
         echo "Použitý run ID: $run_id"

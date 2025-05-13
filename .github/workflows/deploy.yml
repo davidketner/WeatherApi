@@ -1,35 +1,34 @@
-name: Deploy to IIS
+name: Deploy
 
 on:
   workflow_dispatch:
-    inputs:
-      build_run_id:
-        description: 'ID buildu (run-id), ze kterého se má stáhnout artefakt'
-        required: true
 
 jobs:
   deploy:
     runs-on: windows-latest
 
     steps:
-    - name: Install GitHub CLI
-      run: |
-        Invoke-WebRequest -Uri https://github.com/cli/cli/releases/download/v2.49.0/gh_2.49.0_windows_amd64.msi -OutFile ghcli.msi
-        Start-Process msiexec.exe -Wait -ArgumentList '/I ghcli.msi /quiet'
+      - uses: actions/checkout@v4
 
-    - name: Stáhnout artefakt z build runu
-      run: gh run download ${{ github.event.inputs.build_run_id }} --name weather-api-publish --dir ./publish
-      env:
-        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
 
-    - name: Nasazení na IIS přes Web Deploy
-      run: >
-        "C:\Program Files\IIS\Microsoft Web Deploy V3\msdeploy.exe"
-        -source:contentPath="$(System.DefaultWorkingDirectory)\publish"
-        -dest:contentPath=${{ secrets.SITE_NAME }},
-        computerName="https://${{ secrets.DEPLOY_SERVER }}:8172/msdeploy.axd?site=${{ secrets.SITE_NAME }}",
-        userName=${{ secrets.DEPLOY_USER }},
-        password=${{ secrets.DEPLOY_PASSWORD }},
-        authType="Basic"
-        -verb:sync
-        -allowUntrusted
+      - name: Restore dependencies
+        run: dotnet restore
+
+      - name: Publish
+        run: dotnet publish ./WeatherApi/WeatherApi.csproj -c Release -o ./publish
+
+      - name: Deploy pomocí Web Deploy
+        run: >
+          "C:\Program Files\IIS\Microsoft Web Deploy V3\msdeploy.exe"
+          -source:contentPath="$(System.DefaultWorkingDirectory)\publish"
+          -dest:contentPath=${{ secrets.SITE_NAME }},
+          computerName="https://${{ secrets.DEPLOY_SERVER }}:8172/msdeploy.axd?site=${{ secrets.SITE_NAME }}",
+          userName=${{ secrets.DEPLOY_USER }},
+          password=${{ secrets.DEPLOY_PASSWORD }},
+          authType="Basic"
+          -verb:sync
+          -allowUntrusted

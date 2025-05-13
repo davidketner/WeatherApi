@@ -1,10 +1,11 @@
-name: Deploy
+name: Build
 
 on:
-  workflow_dispatch:
+  push:
+    branches: [ "master" ]
 
 jobs:
-  deploy:
+  build:
     runs-on: windows-latest
 
     steps:
@@ -18,17 +19,8 @@ jobs:
       - name: Restore dependencies
         run: dotnet restore
 
-      - name: Publish
-        run: dotnet publish ./WeatherApi/WeatherApi.csproj -c Release -o ./publish
+      - name: Build
+        run: dotnet build --no-restore
 
-      - name: Deploy pomocí Web Deploy
-        run: >
-          "C:\Program Files\IIS\Microsoft Web Deploy V3\msdeploy.exe"
-          -source:contentPath="$(System.DefaultWorkingDirectory)\publish"
-          -dest:contentPath=${{ secrets.SITE_NAME }},
-          computerName="https://${{ secrets.DEPLOY_SERVER }}:8172/msdeploy.axd?site=${{ secrets.SITE_NAME }}",
-          userName=${{ secrets.DEPLOY_USER }},
-          password=${{ secrets.DEPLOY_PASSWORD }},
-          authType="Basic"
-          -verb:sync
-          -allowUntrusted
+      - name: Test
+        run: dotnet test --no-build --verbosity normal

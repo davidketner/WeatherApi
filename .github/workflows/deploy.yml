@@ -35,4 +35,14 @@ jobs:
       env:
         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-    - name
+    - name: Nasazení na IIS přes Web Deploy
+      run: >
+        "C:\Program Files\IIS\Microsoft Web Deploy V3\msdeploy.exe"
+        -source:contentPath="$(System.DefaultWorkingDirectory)\publish"
+        -dest:contentPath=${{ secrets.SITE_NAME }},
+        computerName="https://${{ secrets.DEPLOY_SERVER }}:8172/msdeploy.axd?site=${{ secrets.SITE_NAME }}",
+        userName=${{ secrets.DEPLOY_USER }},
+        password=${{ secrets.DEPLOY_PASSWORD }},
+        authType="Basic"
+        -verb:sync
+        -allowUntrusted

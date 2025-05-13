@@ -12,9 +12,6 @@ jobs:
     runs-on: windows-latest
 
     steps:
-    - name: Nastavit GitHub CLI
-      uses: actions/setup-gh@v1
-
     - name: Zjistit run ID
       id: resolve-run-id
       run: |
@@ -27,22 +24,15 @@ jobs:
         fi
         echo "RUN_ID=$run_id" >> $GITHUB_ENV
         echo "Použitý run ID: $run_id"
-      env:
-        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Install GitHub CLI
+      run: |
+        Invoke-WebRequest -Uri https://github.com/cli/cli/releases/download/v2.49.0/gh_2.49.0_windows_amd64.msi -OutFile ghcli.msi
+        Start-Process msiexec.exe -Wait -ArgumentList '/I ghcli.msi /quiet'
 
     - name: Stáhnout artefakt z runu
       run: gh run download "$RUN_ID" --name weather-api-publish --dir ./publish
       env:
         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-    - name: Nasazení na IIS přes Web Deploy
-      run: >
-        "C:\Program Files\IIS\Microsoft Web Deploy V3\msdeploy.exe"
-        -source:contentPath="$(System.DefaultWorkingDirectory)\publish"
-        -dest:contentPath=${{ secrets.SITE_NAME }},
-        computerName="https://${{ secrets.DEPLOY_SERVER }}:8172/msdeploy.axd?site=${{ secrets.SITE_NAME }}",
-        userName=${{ secrets.DEPLOY_USER }},
-        password=${{ secrets.DEPLOY_PASSWORD }},
-        authType="Basic"
-        -verb:sync
-        -allowUntrusted
+    - name

@@ -4,8 +4,8 @@ on:
   workflow_dispatch:
     inputs:
       build_run_id:
-        description: 'ID buildu (run-id), ze kterého se má stáhnout artefakt'
-        required: true
+        description: 'Volitelný: ID buildu (run-id), ze kterého se má stáhnout artefakt'
+        required: false
 
 jobs:
   deploy:
@@ -13,10 +13,25 @@ jobs:
 
     steps:
     - name: Nastavit GitHub CLI
-      uses: cli/gh-action@v2
+      uses: cli/setup-gh@v2
 
-    - name: Stáhnout artefakt z build runu
-      run: gh run download ${{ github.event.inputs.build_run_id }} --name weather-api-publish --dir ./publish
+    - name: Zjistit run ID
+      id: resolve-run-id
+      run: |
+        if [ -z "${{ github.event.inputs.build_run_id }}" ]; then
+          echo "Žádný build_run_id nezadán – hledám poslední run z větve 'master'..."
+          run_id=$(gh run list --workflow ".NET" --branch master --status success --limit 1 --json databaseId --jq ".[0].databaseId")
+        else
+          echo "Používám ručně zadaný run ID: ${{ github.event.inputs.build_run_id }}"
+          run_id=${{ github.event.inputs.build_run_id }}
+        fi
+        echo "RUN_ID=$run_id" >> $GITHUB_ENV
+        echo "Použitý run ID: $run_id"
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Stáhnout artefakt z runu
+      run: gh run download "$RUN_ID" --name weather-api-publish --dir ./publish
       env:
         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 

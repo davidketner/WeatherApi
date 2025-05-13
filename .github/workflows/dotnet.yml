@@ -1,18 +1,20 @@
-# This workflow will build a .NET project
-# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-net
-
-name: .NET
+name: Build & Optional Deploy
 
 on:
   push:
     branches: [ "master" ]
-  pull_request:
-    branches: [ "master" ]
+  workflow_dispatch:
+    inputs:
+      deploy:
+        description: 'Spustit deploy? (ano/ne)'
+        required: false
+        default: 'ne'
 
 jobs:
   build:
-
     runs-on: windows-latest
+    outputs:
+      should_deploy: ${{ github.event.inputs.deploy }}
 
     steps:
     - uses: actions/checkout@v4
@@ -20,13 +22,16 @@ jobs:
       uses: actions/setup-dotnet@v4
       with:
         dotnet-version: 8.0.x
-    - name: Restore dependencies
+
+    - name: Restore
       run: dotnet restore
+
     - name: Build
       run: dotnet build --no-restore
+
     - name: Test
       run: dotnet test --no-build --verbosity normal
-      
+
     - name: Publish
       run: dotnet publish ./WeatherApi/WeatherApi.csproj -c Release -o ./publish
 
@@ -35,3 +40,27 @@ jobs:
       with:
         name: weather-api-publish
         path: ./publish
+
+  deploy:
+    needs: build
+    if: ${{ github.event.inputs.deploy == 'ano' }}
+    runs-on: windows-latest
+
+    steps:
+    - name: Download artifact
+      uses: actions/download-artifact@v4
+      with:
+        name: weather-api-publish
+        path: ./publish
+
+    - name: Deploy to IIS via Web Deploy
+      run: >
+        "C:\Program Files\IIS\Microsoft Web Deploy V3\msdeploy.exe"
+        -source:contentPath="$(System.DefaultWorkingDirectory)\publish"
+        -dest:contentPath=${{ secrets.SITE_NAME }},
+        computerName="https://${{ secrets.DEPLOY_SERVER }}:8172/msdeploy.axd?site=${{ secrets.SITE_NAME }}",
+        userName=${{ secrets.DEPLOY_USER }},
+        password=${{ secrets.DEPLOY_PASSWORD }},
+        authType="Basic"
+        -verb:sync
+        -allowUntrusted

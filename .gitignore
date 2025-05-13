@@ -3,3 +3,10 @@
 ################################################################################
 
 /.vs
+/WeatherApi/.config
+/WeatherApi/bin
+/WeatherApi/obj/Debug/net8.0
+/WeatherApi/obj/publish/win-x64
+/WeatherApi/obj/Release/net8.0
+/WeatherApi/obj/WeatherApi.csproj.EntityFrameworkCore.targets
+/WeatherApi/Properties/PublishProfiles

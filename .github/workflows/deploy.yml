@@ -1,0 +1,32 @@
+name: Deploy to IIS
+
+on:
+  workflow_dispatch:
+    inputs:
+      build_run_id:
+        description: 'ID buildu (run-id), ze kterého se má stáhnout artefakt'
+        required: true
+
+jobs:
+  deploy:
+    runs-on: windows-latest
+
+    steps:
+    - name: Stáhnout artefakt z build runu
+      uses: actions/download-artifact@v4
+      with:
+        name: dotnet-api-publish
+        path: ./publish
+        run-id: ${{ github.event.inputs.build_run_id }}
+
+    - name: Nasazení na IIS přes Web Deploy
+      run: >
+        "C:\Program Files\IIS\Microsoft Web Deploy V3\msdeploy.exe"
+        -source:contentPath="$(System.DefaultWorkingDirectory)\publish"
+        -dest:contentPath=${{ secrets.SITE_NAME }},
+        computerName="https://${{ secrets.DEPLOY_SERVER }}:8172/msdeploy.axd?site=${{ secrets.SITE_NAME }}",
+        userName=${{ secrets.DEPLOY_USER }},
+        password=${{ secrets.DEPLOY_PASSWORD }},
+        authType="Basic"
+        -verb:sync
+        -allowUntrusted

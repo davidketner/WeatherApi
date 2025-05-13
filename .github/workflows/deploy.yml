@@ -13,7 +13,7 @@ jobs:
 
     steps:
     - name: Nastavit GitHub CLI
-      uses: cli/setup-gh@v2
+      uses: actions/setup-gh@v1
 
     - name: Zjistit run ID
       id: resolve-run-id

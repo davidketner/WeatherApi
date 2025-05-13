@@ -15,7 +15,7 @@ jobs:
     - name: Stáhnout artefakt z build runu
       uses: actions/download-artifact@v4
       with:
-        name: dotnet-api-publish
+        name: weather-api-publish
         path: ./publish
         run-id: ${{ github.event.inputs.build_run_id }}
 
